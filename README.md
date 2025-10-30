@@ -64,11 +64,11 @@ Make sure **Docker** is installed on your system or VPS/VM.
 
 ### 2. Build the Docker Image
 Navigate to the project root (where the Dockerfile is located) and run:
-docker build -t mgnrega-app .
+```docker build -t mgnrega-app .```
 
 ### 3. Run the Container
 Launch the containerized app on port **8088**:
-docker run -d -p 8088:5000 mgnrega-app
+```docker run -d -p 8088:5000 mgnrega-app```
 
 
 ### 4. Access the Dashboard

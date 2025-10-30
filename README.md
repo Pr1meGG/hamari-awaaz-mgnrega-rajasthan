@@ -6,7 +6,6 @@
 - [🛠️ Tech Stack & Architecture](#️-tech-stack--architecture)
 - [🚀 Quick Deployment Guide](#-quick-deployment-guide)
 - [📂 Repository Structure](#-repository-structure)
-- [⚖️ License](#️-license)
 
 ---
 
@@ -87,10 +86,3 @@ Launch the containerized app on port **8088**:
 └── templates/
     └── index.html           # Frontend UI
 ```
----
-
-## ⚖️ License
-
-This project is licensed under the **MIT License**.  
-You may freely modify and reuse the code for both commercial and private use,  
-as long as you include the original copyright.

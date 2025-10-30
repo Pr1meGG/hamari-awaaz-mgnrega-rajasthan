@@ -1,0 +1,211 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Hamari Awaaz: MGNREGA Dashboard</title>
+    <!-- Tailwind CSS CDN for styling -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+      /* Custom font and basic styling */
+      body {
+        font-family: "Inter", sans-serif;
+      }
+      /* Custom class for performance rate colors */
+      .performance-good {
+        background-color: #d1fae5;
+        color: #065f46;
+        font-weight: bold;
+      } /* Light Green */
+      .performance-average {
+        background-color: #fef9c3;
+        color: #854d0e;
+        font-weight: bold;
+      } /* Light Yellow */
+      .performance-poor {
+        background-color: #fee2e2;
+        color: #991b1b;
+        font-weight: bold;
+      } /* Light Red */
+    </style>
+    <script>
+      tailwind.config = {
+        theme: {
+          extend: {
+            colors: {
+              "primary-dark": "#004d40" /* Deep Teal */,
+              "primary-light": "#e0f2f1" /* Light Mint */,
+            },
+          },
+        },
+      };
+    </script>
+  </head>
+  <body class="bg-gray-50 min-h-screen p-4 sm:p-8">
+    <!-- Header Section -->
+    <header
+      class="max-w-4xl mx-auto mb-8 p-4 bg-white rounded-xl shadow-lg border-t-4 border-primary-dark"
+    >
+      <h1
+        class="text-3xl sm:text-4xl font-extrabold text-primary-dark tracking-tight"
+      >
+        Hamari Awaaz 📢 - MGNREGA Performance
+      </h1>
+      <p class="text-sm text-gray-500 mt-1">
+        (डेटा सार्वजनिक डोमेन से लिया गया है, अंतिम अपडेट: आज)
+      </p>
+    </header>
+
+    <!-- Location Information Placeholder (Bonus Feature) -->
+    <div
+      id="location-message"
+      class="max-w-4xl mx-auto mb-6 p-4 rounded-lg bg-amber-100 border-l-4 border-amber-500 text-amber-800 font-medium text-base"
+    >
+      आपका स्थान पता किया जा रहा है... (कृपया ब्राउज़र में लोकेशन एक्सेस की
+      अनुमति दें)
+    </div>
+
+    <!-- Data Table Section -->
+    <div
+      class="max-w-4xl mx-auto overflow-x-auto bg-white rounded-xl shadow-lg"
+    >
+      <table class="min-w-full divide-y divide-gray-200">
+        <thead class="bg-primary-light text-primary-dark">
+          <tr>
+            <th
+              class="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wider rounded-tl-xl sm:px-6"
+            >
+              ज़िला (District)
+            </th>
+            <th
+              class="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wider sm:px-6"
+            >
+              जॉब कार्ड जारी (Job Cards Issued)
+            </th>
+            <th
+              class="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wider sm:px-6"
+            >
+              कार्यकर्ता नियुक्त (Workers Employed)
+            </th>
+            <th
+              class="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wider rounded-tr-xl sm:px-6"
+            >
+              प्रदर्शन दर (%) (Performance Rate)
+            </th>
+          </tr>
+        </thead>
+        <tbody class="divide-y divide-gray-200">
+          {% for district in districts %}
+          <tr class="hover:bg-gray-50 transition duration-150 ease-in-out">
+            <td
+              class="px-4 py-4 whitespace-nowrap text-sm font-medium text-gray-900 sm:px-6"
+            >
+              {{ district.district_name }}
+            </td>
+            <td
+              class="px-4 py-4 whitespace-nowrap text-sm text-gray-500 sm:px-6"
+            >
+              {{ district.Total_No_of_JobCards_issued | int }}
+            </td>
+            <td
+              class="px-4 py-4 whitespace-nowrap text-sm text-gray-500 sm:px-6"
+            >
+              {{ district.Total_No_of_Active_Workers | int }}
+            </td>
+
+            {% set rate = district.Performance_Rate %}
+            <td
+              class="px-4 py-4 whitespace-nowrap text-sm font-bold sm:px-6 {% if rate >= 50 %} performance-good {% elif rate >= 30 %} performance-average {% else %} performance-poor {% endif %}"
+            >
+              {{ "%.2f"|format(rate) }}%
+            </td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+
+    <script>
+      // --- BONUS FEATURE: GEOLOCATION API ---
+
+      const locationMessage = document.getElementById("location-message");
+
+      function getLocation() {
+        if (navigator.geolocation) {
+          // Request location access with 15 second timeout for Docker/VM environments
+          navigator.geolocation.getCurrentPosition(showPosition, showError, {
+            timeout: 15000,
+          });
+        } else {
+          locationMessage.innerHTML =
+            "❌ Geolocation इस ब्राउज़र द्वारा समर्थित नहीं है।";
+        }
+      }
+
+      // 1. Success Handler: Get Coordinates
+      function showPosition(position) {
+        const lat = position.coords.latitude;
+        const lon = position.coords.longitude;
+
+        // DEBUG STEP: Show raw coordinates to confirm success
+        locationMessage.innerHTML = `<span class="text-green-800">✅ स्थान पता चला! Lat: ${lat.toFixed(
+          4
+        )}, Lon: ${lon.toFixed(4)}. जिले की तलाश...</span>`;
+
+        // 2. Reverse Geocoding API (using Nominatim as a free example)
+        const url = `https://nominatim.openstreetmap.org/reverse?format=json&lat=${lat}&lon=${lon}&zoom=10&addressdetails=1`;
+
+        fetch(url)
+          .then((response) => response.json())
+          .then((data) => {
+            let district = "N/A";
+            // Trying to get the administrative boundary name (county is often used for districts)
+            if (data.address.county) {
+              district = data.address.county;
+            } else if (data.address.city) {
+              district = data.address.city;
+            } else if (data.address.town) {
+              district = data.address.town;
+            }
+
+            if (district !== "N/A") {
+              // Showing the message prominently
+              locationMessage.innerHTML = `<span class="text-green-800">✅ कमाल है! आप **${district}** ज़िले के पास हैं! प्रदर्शन डेटा नीचे देखें।</span>`;
+            } else {
+              locationMessage.innerHTML =
+                "⚠️ स्थान पता चला, लेकिन ज़िले का नाम स्पष्ट रूप से पहचाना नहीं जा सका।";
+            }
+          })
+          .catch((error) => {
+            console.error("Reverse Geocoding Error:", error);
+            locationMessage.innerHTML =
+              "⚠️ स्थान पता चला, लेकिन ज़िला लुकअप में एक त्रुटि आ गई। (API समस्या)";
+          });
+      }
+
+      // 3. Error Handler: If user denies location access
+      function showError(error) {
+        switch (error.code) {
+          case error.PERMISSION_DENIED:
+            locationMessage.innerHTML =
+              "❌ स्थान एक्सेस उपयोगकर्ता द्वारा अस्वीकार कर दिया गया। ज़िला नहीं दिखा सकते।";
+            break;
+          case error.POSITION_UNAVAILABLE:
+            locationMessage.innerHTML =
+              "❌ स्थान की जानकारी अनुपलब्ध है। (Docker/VM सेटिंग्स या नेटवर्क जांचें)";
+            break;
+          case error.TIMEOUT:
+            locationMessage.innerHTML =
+              "❌ उपयोगकर्ता स्थान प्राप्त करने के अनुरोध में समय समाप्त हो गया (15s सीमा)।";
+            break;
+          default:
+            locationMessage.innerHTML = `❌ एक अज्ञात स्थान त्रुटि हुई (कोड: ${error.code})।`;
+            break;
+        }
+      }
+
+      // Start the location detection process
+      getLocation();
+    </script>
+  </body>
+</html>
